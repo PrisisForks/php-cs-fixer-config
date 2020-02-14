@@ -38,8 +38,7 @@ final class ComposerTest extends TestCase
         $composerJson = json_decode(
             (string) file_get_contents(__DIR__ . '/../../composer.json'),
             true,
-            512,
-            JSON_THROW_ON_ERROR
+            512, JSON_THROW_ON_ERROR
         );
 
         if (! isset($composerJson['extra']['branch-alias'])) {

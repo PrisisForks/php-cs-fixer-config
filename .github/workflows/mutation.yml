@@ -71,4 +71,4 @@ jobs:
           cd ..
 
       - name: "mutation tests"
-        run: php -d memory_limit=-1 ./.build/vendor/bin/infection --configuration="./../infection.json" --ignore-msi-with-no-mutations --min-covered-msi=${{ env.MIN_COVERED_MSI }} --min-msi=${{ env.MIN_MSI }} -j$(nproc)
+        run: php -d memory_limit=-1 ./.build/vendor/bin/infection --configuration="$GITHUB_WORKSPACE/infection.json" --ignore-msi-with-no-mutations --min-covered-msi=${{ env.MIN_COVERED_MSI }} --min-msi=${{ env.MIN_MSI }} -j$(nproc)

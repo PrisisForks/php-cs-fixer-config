@@ -66,6 +66,4 @@ jobs:
         run: $COMPOSER_UP
 
       - name: "lint php code"
-        run: |
-          cd $GITHUB_WORKSPACE
-          /home/runner/.composer/vendor/bin/php-cs-fixer fix --config=$GITHUB_WORKSPACE/.php_cs -v --dry-run --format=checkstyle | cs2pr
+        run: /home/runner/.composer/vendor/bin/php-cs-fixer fix --config=$GITHUB_WORKSPACE/.php_cs -v --dry-run --format=checkstyle | cs2pr

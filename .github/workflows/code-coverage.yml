@@ -59,7 +59,7 @@ jobs:
         run: $COMPOSER_UP
 
       - name: "Collect code coverage"
-        run: $PHPUNIT --configuration=./phpunit.xml.dist --coverage-clover=./..build/logs/clover.xml
+        run: $PHPUNIT --configuration=./phpunit.xml.dist --coverage-clover=./.build/phpunit/coverage/clover.xml
 
       - name: "Send code coverage report to Codecov.io"
         env:
