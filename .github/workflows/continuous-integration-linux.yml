@@ -34,7 +34,7 @@ jobs:
       - name: "Setup PHP"
         uses: shivammathur/setup-php@1.8.2
         with:
-          php-version: ${{ matrix.php-version }}
+          php-version: ${{ matrix.php-versions }}
           extensions: ${{ env.REQUIRED_PHP_EXTENSIONS }}
           ini-values: ${{ env.REQUIRED_INI_VALUES }}
           tools: ${{ env.REQUIRED_TOOLS }}
