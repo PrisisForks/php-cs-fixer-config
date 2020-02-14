@@ -64,8 +64,11 @@ jobs:
       - name: "List all php extensions with versions"
         run: php -r 'foreach (get_loaded_extensions() as $extension) echo $extension . " " . phpversion($extension) . PHP_EOL;'
 
-      - name: "Install highest dependencies"
-        run: $COMPOSER_UP
+      - name: "Install .build dependencies"
+        run: |
+          cd ./.build
+          $COMPOSER_UP
+          cd ..
 
       - name: "mutation tests"
-        run: php -d memory_limit=-1 ./vendor/bin/infection --ignore-msi-with-no-mutations --min-covered-msi=${{ env.MIN_COVERED_MSI }} --min-msi=${{ env.MIN_MSI }} -j$(nproc)
+        run: php -d memory_limit=-1 ./.build/vendor/bin/infection --configuration="./../infection.json" --ignore-msi-with-no-mutations --min-covered-msi=${{ env.MIN_COVERED_MSI }} --min-msi=${{ env.MIN_MSI }} -j$(nproc)

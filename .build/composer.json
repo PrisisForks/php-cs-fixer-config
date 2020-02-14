@@ -20,7 +20,7 @@
     },
     "scripts": {
         "cs": "php-cs-fixer fix --config=\"./../.php_cs\" -v",
-        "cs:check": "php-cs-fixer fix --config=\"./../.php_cs\" -v --dry-run --stop-on-violation",
+        "cs:check": "php-cs-fixer fix --config=\"./../.php_cs\" -v --dry-run",
         "phpstan": "phpstan analyse -c ./../phpstan.neon --memory-limit=-1",
         "psalm": "psalm --threads=$(nproc)",
         "psalter": "psalter --issues=all --threads=$(nproc)",
