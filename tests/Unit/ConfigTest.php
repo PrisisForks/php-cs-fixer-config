@@ -11,166 +11,293 @@ declare(strict_types=1);
  * @see https://github.com/narrowspark/php-cs-fixer-config
  */
 
-namespace Narrowspark\CS\Config;
+namespace Narrowspark\CS\Config\Tests\Unit;
 
-use PedroTroller\CS\Fixer\ClassNotation\OrderedWithGetterAndSetterFirstFixer;
-use PedroTroller\CS\Fixer\CodingStyle\ExceptionsPunctuationFixer;
-use PedroTroller\CS\Fixer\CodingStyle\ForbiddenFunctionsFixer;
-use PedroTroller\CS\Fixer\CodingStyle\LineBreakBetweenMethodArgumentsFixer;
-use PedroTroller\CS\Fixer\CodingStyle\LineBreakBetweenStatementsFixer;
-use PedroTroller\CS\Fixer\Comment\CommentLineToPhpdocBlockFixer;
-use PedroTroller\CS\Fixer\Comment\SingleLineCommentFixer;
-use PedroTroller\CS\Fixer\Comment\UselessCommentFixer;
-use PedroTroller\CS\Fixer\DeadCode\UselessCodeAfterReturnFixer;
-use PedroTroller\CS\Fixer\DoctrineMigrationsFixer;
-use PedroTroller\CS\Fixer\Phpspec\OrderedSpecElementsFixer;
-use PedroTroller\CS\Fixer\Phpspec\PhpspecScenarioReturnTypeDeclarationFixer;
-use PedroTroller\CS\Fixer\Phpspec\PhpspecScenarioScopeFixer;
-use PedroTroller\CS\Fixer\PhpspecFixer;
-use PhpCsFixer\Config as CsConfig;
-use PhpCsFixerCustomFixers\Fixer\CommentSurroundedBySpacesFixer;
-use PhpCsFixerCustomFixers\Fixer\DataProviderNameFixer;
-use PhpCsFixerCustomFixers\Fixer\DataProviderReturnTypeFixer;
-use PhpCsFixerCustomFixers\Fixer\DataProviderStaticFixer;
-use PhpCsFixerCustomFixers\Fixer\InternalClassCasingFixer;
-use PhpCsFixerCustomFixers\Fixer\MultilineCommentOpeningClosingAloneFixer;
-use PhpCsFixerCustomFixers\Fixer\NoCommentedOutCodeFixer;
-use PhpCsFixerCustomFixers\Fixer\NoDoctrineMigrationsGeneratedCommentFixer;
-use PhpCsFixerCustomFixers\Fixer\NoDuplicatedImportsFixer;
-use PhpCsFixerCustomFixers\Fixer\NoImportFromGlobalNamespaceFixer;
-use PhpCsFixerCustomFixers\Fixer\NoLeadingSlashInGlobalNamespaceFixer;
-use PhpCsFixerCustomFixers\Fixer\NoNullableBooleanTypeFixer;
-use PhpCsFixerCustomFixers\Fixer\NoPhpStormGeneratedCommentFixer;
-use PhpCsFixerCustomFixers\Fixer\NoReferenceInFunctionDefinitionFixer;
-use PhpCsFixerCustomFixers\Fixer\NoSuperfluousConcatenationFixer;
-use PhpCsFixerCustomFixers\Fixer\NoUselessCommentFixer;
-use PhpCsFixerCustomFixers\Fixer\NoUselessDoctrineRepositoryCommentFixer;
-use PhpCsFixerCustomFixers\Fixer\NoUselessSprintfFixer;
-use PhpCsFixerCustomFixers\Fixer\OperatorLinebreakFixer;
-use PhpCsFixerCustomFixers\Fixer\PhpdocNoIncorrectVarAnnotationFixer;
-use PhpCsFixerCustomFixers\Fixer\PhpdocNoSuperfluousParamFixer;
-use PhpCsFixerCustomFixers\Fixer\PhpdocOnlyAllowedAnnotationsFixer;
-use PhpCsFixerCustomFixers\Fixer\PhpdocParamOrderFixer;
-use PhpCsFixerCustomFixers\Fixer\PhpdocParamTypeFixer;
-use PhpCsFixerCustomFixers\Fixer\PhpdocSelfAccessorFixer;
-use PhpCsFixerCustomFixers\Fixer\PhpdocSingleLineVarFixer;
-use PhpCsFixerCustomFixers\Fixer\PhpdocTypesTrimFixer;
-use PhpCsFixerCustomFixers\Fixer\PhpUnitNoUselessReturnFixer;
-use PhpCsFixerCustomFixers\Fixer\SingleSpaceAfterStatementFixer;
-use PhpCsFixerCustomFixers\Fixer\SingleSpaceBeforeStatementFixer;
+use Generator;
+use Narrowspark\CS\Config\Config;
+use Narrowspark\TestingHelper\Traits\AssertArrayTrait;
+use PhpCsFixer\ConfigInterface;
+use PhpCsFixer\Fixer\FixerInterface;
+use PhpCsFixer\FixerFactory;
+use PhpCsFixer\RuleSet;
+use PHPUnit\Framework\TestCase;
+use ReflectionException;
+use function array_diff;
+use function array_diff_key;
+use function array_keys;
+use function array_map;
 use function array_merge;
+use function count;
+use function implode;
+use function is_array;
 use function is_string;
+use function sprintf;
+use function str_replace;
 use function trim;
+use function var_export;
 
-final class Config extends CsConfig
+/**
+ * @internal
+ *
+ * @covers \Narrowspark\CS\Config\Config
+ *
+ * @medium
+ */
+final class ConfigTest extends TestCase
 {
-    public const VERSION = '';
+    use AssertArrayTrait;
 
-    /**
-     * A list of override rules.
-     *
-     * @var array<string, array<string, mixed>|bool|string>
-     */
-    private $overwriteRules;
-
-    /** @var array<string, array<string, string>> */
-    private $headerRules = [];
-
-    /**
-     * Create new Config instance.
-     *
-     * @param null|string                                     $header
-     * @param array<string, array<string, mixed>|bool|string> $overwriteConfig
-     */
-    public function __construct(?string $header = null, array $overwriteConfig = [])
+    public function testImplementsInterface(): void
     {
-        parent::__construct('narrowspark');
+        self::assertInstanceOf(ConfigInterface::class, new Config());
+    }
 
-        if (is_string($header)) {
-            $this->headerRules['header_comment'] = [
-                'comment_type' => 'PHPDoc',
-                'header' => trim($header),
-                'location' => 'after_declare_strict',
-                'separate' => 'both',
-            ];
+    public function testValues(): void
+    {
+        $config = new Config();
+
+        self::assertSame('narrowspark', $config->getName());
+    }
+
+    public function testHasPsr2Rules(): void
+    {
+        $this->assertHasRules(
+            $this->getPsr2Rules(),
+            (new Config())->getRules(),
+            'PSR2'
+        );
+    }
+
+    public function testHasSymfonyRules(): void
+    {
+        $this->assertHasRules(
+            $this->getSymfonyRules(),
+            (new Config())->getRules(),
+            'Symfony'
+        );
+    }
+
+    public function testHasContribRules(): void
+    {
+        $this->assertHasRules(
+            $this->getContribRules(),
+            (new Config())->getRules(),
+            'Contrib'
+        );
+    }
+
+    public function testIfAllRulesAreTested(): void
+    {
+        $testRules = array_merge(
+            $this->getNoGroupRules(),
+            $this->getPsr2Rules(),
+            $this->getPsr12Rules(),
+            $this->getContribRules(),
+            $this->getSymfonyRules(),
+            $this->getPhp71Rules(),
+            $this->getPhp73Rules(),
+            $this->getPHPUnitRules()
+        );
+
+        /** @var \PedroTroller\CS\Fixer\AbstractFixer $fixer */
+        foreach (new \PedroTroller\CS\Fixer\Fixers() as $fixer) {
+            $testRules[$fixer->getName()] = true;
         }
 
-        $this->setRiskyAllowed(true);
+        /** @var \PedroTroller\CS\Fixer\AbstractFixer $fixer */
+        foreach (new \PhpCsFixerCustomFixers\Fixers() as $fixer) {
+            $testRules[$fixer->getName()] = true;
+        }
 
-        // pedrotroller/php-cs-custom-fixer
-        $this->registerCustomFixers([
-            new OrderedWithGetterAndSetterFirstFixer(),
-            new ExceptionsPunctuationFixer(),
-            new ForbiddenFunctionsFixer(),
-            new LineBreakBetweenMethodArgumentsFixer(),
-            new LineBreakBetweenStatementsFixer(),
-            new CommentLineToPhpdocBlockFixer(),
-            new SingleLineCommentFixer(),
-            new UselessCommentFixer(),
-            new UselessCodeAfterReturnFixer(),
-            new OrderedSpecElementsFixer(),
-            new PhpspecScenarioReturnTypeDeclarationFixer(),
-            new PhpspecScenarioScopeFixer(),
-            new DoctrineMigrationsFixer(),
-            new PhpspecFixer(),
-        ]);
-        // kubawerlos/php-cs-fixer-custom-fixers
-        $this->registerCustomFixers([
-            new InternalClassCasingFixer(),
-            new MultilineCommentOpeningClosingAloneFixer(),
-            new NoCommentedOutCodeFixer(),
-            new NoDoctrineMigrationsGeneratedCommentFixer(),
-            new NoImportFromGlobalNamespaceFixer(),
-            new NoLeadingSlashInGlobalNamespaceFixer(),
-            new NoNullableBooleanTypeFixer(),
-            new NoPhpStormGeneratedCommentFixer(),
-            new NoReferenceInFunctionDefinitionFixer(),
-            new NoSuperfluousConcatenationFixer(),
-            new NoUselessCommentFixer(),
-            new NoUselessDoctrineRepositoryCommentFixer(),
-            new OperatorLinebreakFixer(),
-            new PhpdocNoIncorrectVarAnnotationFixer(),
-            new PhpdocNoSuperfluousParamFixer(),
-            new PhpdocParamOrderFixer(),
-            new PhpdocParamTypeFixer(),
-            new PhpdocOnlyAllowedAnnotationsFixer(),
-            new PhpdocSelfAccessorFixer(),
-            new PhpdocSingleLineVarFixer(),
-            new SingleSpaceAfterStatementFixer(),
-            new SingleSpaceBeforeStatementFixer(),
-            new DataProviderNameFixer(),
-            new NoUselessSprintfFixer(),
-            new PhpUnitNoUselessReturnFixer(),
-            new NoDuplicatedImportsFixer(),
-            new DataProviderReturnTypeFixer(),
-            new CommentSurroundedBySpacesFixer(),
-            new DataProviderStaticFixer(),
-            new PhpdocTypesTrimFixer(),
-        ]);
+        foreach ($this->getDeprecatedFixer() as $depFixer) {
+            unset($testRules[$depFixer]);
+        }
 
-        $this->overwriteRules = $overwriteConfig;
+        $rules = (new Config())->getRules();
+
+        if (count($testRules) !== count($rules)) {
+            $message = "Found missing keys in \\Narrowspark\\CS\\Config\\Config::getRules()\n";
+            $message .= str_replace(['array (', ')', ','], '', var_export(array_keys(array_diff_key($testRules, $rules)), true));
+
+            self::fail($message);
+        } else {
+            $this->addToAssertionCount(1);
+        }
+    }
+
+    public function testDoesNotHaveHeaderCommentFixerByDefault(): void
+    {
+        $rules = (new Config())->getRules();
+
+        self::assertArrayHasKey('header_comment', $rules);
+        self::assertFalse($rules['header_comment']);
+        self::assertFalse($rules['no_blank_lines_before_namespace']);
+        self::assertTrue($rules['single_blank_line_before_namespace']);
+    }
+
+    public function testHasHeaderCommentFixerIfProvided(): void
+    {
+        $header = 'foo';
+        $config = new Config($header);
+        $rules = $config->getRules();
+
+        self::assertArrayHasKey('header_comment', $rules);
+
+        $expected = [
+            'comment_type' => 'PHPDoc',
+            'header' => $header,
+            'location' => 'after_declare_strict',
+            'separate' => 'both',
+        ];
+        self::assertSame($expected, $rules['header_comment']);
+        self::assertFalse($rules['no_blank_lines_before_namespace']);
+        self::assertTrue($rules['single_blank_line_before_namespace']);
+    }
+
+    public function testAllConfiguredRulesAreBuiltIn(): void
+    {
+        $pedroTrollerRules = [];
+
+        foreach (new \PedroTroller\CS\Fixer\Fixers() as $fixer) {
+            if ($fixer->isDeprecated()) {
+                continue;
+            }
+
+            $pedroTrollerRules[] = $fixer->getName();
+        }
+
+        $kubawerlosRules = [];
+
+        foreach (new \PhpCsFixerCustomFixers\Fixers() as $fixer) {
+            $kubawerlosRules[] = $fixer->getName();
+        }
+
+        $fixersNotBuiltIn = array_diff(
+            $this->configuredFixers(),
+            array_merge($this->builtInFixers(), $pedroTrollerRules, $kubawerlosRules)
+        );
+
+        self::assertEmpty($fixersNotBuiltIn, sprintf(
+            'Failed to assert that fixers for the rules [%s] are built in',
+            implode('", "', $fixersNotBuiltIn)
+        ));
     }
 
     /**
-     * @return ((array|bool|int|mixed|string)[]|bool|string)[]
+     * @dataProvider provideDoesNotHaveRulesEnabledCases
      *
-     * @psalm-return array<int|string, array|bool|string>
+     * @param string                           $fixer
+     * @param array<int|string, string>|string $reason
      */
-    public function getRules(): array
+    public function testDoesNotHaveRulesEnabled(string $fixer, $reason): void
     {
-        return array_merge(
-            $this->getNoGroupRules(),
-            $this->getContribRules(),
-            $this->getPhp71Rules(),
-            $this->getPhp73Rules(),
-            $this->getSymfonyRules(),
-            $this->getPsr12Rules(),
-            $this->getPHPUnitRules(),
-            $this->getPedroTrollerRules(),
-            $this->getKubawerlosRules(),
-            $this->headerRules,
-            $this->overwriteRules
-        );
+        $config = new Config();
+        $rule = [
+            $fixer => false,
+        ];
+
+        if ($fixer === 'array_syntax' && is_array($reason)) {
+            self::assertNotSame(['syntax' => 'long'], $config->getRules()['array_syntax'], sprintf(
+                'Fixer [%s] should not be enabled, because [%s]',
+                $fixer,
+                $reason['long']
+            ));
+        } elseif (is_string($reason)) {
+            self::assertArraySubset($rule, $config->getRules(), true, sprintf(
+                'Fixer [%s] should not be enabled, because [%s]',
+                $fixer,
+                $reason
+            ));
+        } else {
+            self::fail($fixer);
+        }
+    }
+
+    /**
+     * @return array<int, array<string, string>|string>
+     *
+     * @psalm-return list<array{0: string, 1: array{long: string}|string}>
+     */
+    public static function provideDoesNotHaveRulesEnabledCases(): iterable
+    {
+        $symfonyFixers = [
+            'self_accessor' => 'it causes an edge case error',
+        ];
+
+        $contribFixers = [
+            'header_comment' => 'it is not enabled by default',
+            'array_syntax' => [
+                'long' => 'it conflicts with short array syntax (which is enabled)',
+            ],
+            'no_php4_constructor' => 'it changes behaviour',
+            'not_operator_with_space' => 'we do not need leading and trailing whitespace before !',
+            'php_unit_strict' => 'it changes behaviour',
+            'psr0' => 'we are using PSR-4',
+            'no_homoglyph_names' => 'renames classes and cannot rename the files. You might have string references to renamed code (``$$name``)',
+            'simplified_null_return' => 'it changes behaviour on void return',
+        ];
+
+        $fixers = array_merge($contribFixers, $symfonyFixers);
+
+        $data = [];
+
+        foreach ($fixers as $fixer => $reason) {
+            $data[] = [
+                $fixer,
+                $reason,
+            ];
+        }
+
+        return $data;
+    }
+
+    public function testHeaderCommentFixerIsDisabledByDefault(): void
+    {
+        $rules = (new Config())->getRules();
+
+        self::assertArrayHasKey('header_comment', $rules);
+        self::assertFalse($rules['header_comment']);
+    }
+
+    /**
+     * @dataProvider provideHeaderCommentFixerIsEnabledIfHeaderIsProvidedCases
+     *
+     * @param string $header
+     */
+    public function testHeaderCommentFixerIsEnabledIfHeaderIsProvided(string $header): void
+    {
+        $rules = (new Config($header))->getRules();
+
+        self::assertArrayHasKey('header_comment', $rules);
+        $expected = [
+            'comment_type' => 'PHPDoc',
+            'header' => trim($header),
+            'location' => 'after_declare_strict',
+            'separate' => 'both',
+        ];
+        self::assertSame($expected, $rules['header_comment']);
+    }
+
+    /**
+     * @return Generator
+     *
+     * @psalm-return Generator<string, array{0: string}, mixed, void>
+     */
+    public static function provideHeaderCommentFixerIsEnabledIfHeaderIsProvidedCases(): iterable
+    {
+        $values = [
+            'string-empty' => '',
+            'string-not-empty' => 'foo',
+            'string-with-line-feed-only' => "\n",
+            'string-with-spaces-only' => ' ',
+            'string-with-tab-only' => "\t",
+        ];
+
+        foreach ($values as $key => $value) {
+            yield $key => [
+                $value,
+            ];
+        }
     }
 
     /**
@@ -178,7 +305,7 @@ final class Config extends CsConfig
      *
      * @psalm-return array{final_static_access: true, final_public_method_for_abstract_class: true, lowercase_constants: false, global_namespace_import: array{import_classes: true, import_constants: true, import_functions: true}, nullable_type_declaration_for_default_null_value: true, phpdoc_line_span: array{const: string, method: string, property: string}, phpdoc_to_param_type: false, self_static_accessor: true}
      */
-    protected function getNoGroupRules(): array
+    public function getNoGroupRules(): array
     {
         return [
             'final_static_access' => true,
@@ -197,71 +324,6 @@ final class Config extends CsConfig
             ],
             'phpdoc_to_param_type' => false,
             'self_static_accessor' => true,
-        ];
-    }
-
-    /**
-     * @return ((int|true)[]|bool)[]
-     *
-     * @psalm-return array{PedroTroller/comment_line_to_phpdoc_block: true, PedroTroller/exceptions_punctuation: true, PedroTroller/forbidden_functions: false, PedroTroller/ordered_with_getter_and_setter_first: true, PedroTroller/line_break_between_method_arguments: array{max-args: int, max-length: int, automatic-argument-merge: true}, PedroTroller/line_break_between_statements: true, PedroTroller/useless_code_after_return: true, PedroTroller/phpspec: false, PedroTroller/doctrine_migrations: true}
-     */
-    protected function getPedroTrollerRules(): array
-    {
-        return [
-            'PedroTroller/comment_line_to_phpdoc_block' => true,
-            'PedroTroller/exceptions_punctuation' => true,
-            'PedroTroller/forbidden_functions' => false,
-            'PedroTroller/ordered_with_getter_and_setter_first' => true,
-            'PedroTroller/line_break_between_method_arguments' => [
-                'max-args' => 4,
-                'max-length' => 120,
-                'automatic-argument-merge' => true,
-            ],
-            'PedroTroller/line_break_between_statements' => true,
-            'PedroTroller/useless_code_after_return' => true,
-            'PedroTroller/phpspec' => false,
-            'PedroTroller/doctrine_migrations' => true,
-        ];
-    }
-
-    /**
-     * @return bool[]
-     *
-     * @psalm-return array<string, bool>
-     */
-    protected function getKubawerlosRules(): array
-    {
-        return [
-            InternalClassCasingFixer::name() => true,
-            MultilineCommentOpeningClosingAloneFixer::name() => false,
-            NoCommentedOutCodeFixer::name() => true,
-            NoDoctrineMigrationsGeneratedCommentFixer::name() => true,
-            NoImportFromGlobalNamespaceFixer::name() => false,
-            NoLeadingSlashInGlobalNamespaceFixer::name() => true,
-            NoNullableBooleanTypeFixer::name() => false,
-            NoPhpStormGeneratedCommentFixer::name() => true,
-            NoReferenceInFunctionDefinitionFixer::name() => false,
-            NoSuperfluousConcatenationFixer::name() => true,
-            NoUselessCommentFixer::name() => false,
-            NoUselessDoctrineRepositoryCommentFixer::name() => true,
-            OperatorLinebreakFixer::name() => true,
-            PhpdocNoIncorrectVarAnnotationFixer::name() => true,
-            PhpdocNoSuperfluousParamFixer::name() => true,
-            PhpdocParamOrderFixer::name() => true,
-            PhpdocParamTypeFixer::name() => true,
-            PhpdocSelfAccessorFixer::name() => true,
-            PhpdocSingleLineVarFixer::name() => true,
-            SingleSpaceAfterStatementFixer::name() => true,
-            SingleSpaceBeforeStatementFixer::name() => true,
-            DataProviderNameFixer::name() => true,
-            NoUselessSprintfFixer::name() => true,
-            PhpUnitNoUselessReturnFixer::name() => true,
-            NoDuplicatedImportsFixer::name() => true,
-            DataProviderReturnTypeFixer::name() => true,
-            CommentSurroundedBySpacesFixer::name() => true,
-            DataProviderStaticFixer::name() => true,
-            PhpdocTypesTrimFixer::name() => true,
-            PhpdocOnlyAllowedAnnotationsFixer::name() => false,
         ];
     }
 
@@ -292,7 +354,7 @@ final class Config extends CsConfig
     }
 
     /**
-     * @return true[]
+     * @return array<string, bool>
      *
      * @psalm-return array{heredoc_indentation: true}
      */
@@ -306,7 +368,7 @@ final class Config extends CsConfig
     /**
      * @return ((bool|string|string[])[]|bool)[]
      *
-     * @psalm-return array{@DoctrineAnnotation: true, align_multiline_comment: array{comment_type: string}, no_binary_string: true, no_unset_on_property: false, array_indentation: true, array_syntax: array{syntax: string}, logical_operators: true, pre_increment: false, backtick_to_shell_exec: true, blank_line_before_return: true, class_keyword_remove: false, combine_consecutive_issets: true, combine_consecutive_unsets: true, comment_to_phpdoc: false, compact_nullable_typehint: true, date_time_immutable: true, declare_strict_types: true, dir_constant: true, ereg_to_preg: true, escape_implicit_backslashes: true, explicit_indirect_variable: true, explicit_string_variable: true, ordered_class_elements: true, ordered_imports: array{importsOrder: array{0: string, 1: string, 2: string}}, final_class: true, final_internal_class: true, fully_qualified_strict_types: true, general_phpdoc_annotation_remove: false, hash_to_slash_comment: true, header_comment: false, linebreak_after_opening_tag: true, magic_constant_casing: true, mb_str_functions: false, method_argument_space: array{ensure_fully_multiline: true, keep_multiple_spaces_after_comma: false}, static_lambda: true, string_line_ending: true, method_chaining_indentation: true, modernize_types_casting: true, multiline_comment_opening_closing: true, multiline_whitespace_before_semicolons: array{strategy: string}, no_alternative_syntax: true, no_blank_lines_before_namespace: false, no_multiline_whitespace_before_semicolons: false, no_php4_constructor: false, no_short_echo_tag: true, no_useless_else: true, no_useless_return: true, no_superfluous_elseif: true, phpdoc_to_return_type: true, phpdoc_var_annotation_correct_order: true, no_superfluous_phpdoc_tags: false, not_operator_with_space: false, not_operator_with_successor_space: true, no_homoglyph_names: false, no_unset_cast: true, ordered_interfaces: true, php_unit_method_casing: true, phpdoc_add_missing_param_annotation: array{only_untyped: false}, phpdoc_order: true, phpdoc_types_order: array{null_adjustment: string, sort_algorithm: string}, protected_to_private: true, psr0: false, psr4: true, semicolon_after_instruction: true, simplified_null_return: false, strict_comparison: true, strict_param: true}
+     * @psalm-return array{@DoctrineAnnotation: true, align_multiline_comment: array{comment_type: string}, no_binary_string: true, no_unset_on_property: false, array_indentation: true, array_syntax: array{syntax: string}, logical_operators: true, pre_increment: false, backtick_to_shell_exec: true, blank_line_before_return: true, class_keyword_remove: false, combine_consecutive_issets: true, combine_consecutive_unsets: true, comment_to_phpdoc: false, compact_nullable_typehint: true, date_time_immutable: true, declare_strict_types: true, dir_constant: true, ereg_to_preg: true, escape_implicit_backslashes: true, explicit_indirect_variable: true, explicit_string_variable: true, final_class: true, final_internal_class: true, fully_qualified_strict_types: true, general_phpdoc_annotation_remove: false, hash_to_slash_comment: true, header_comment: false, linebreak_after_opening_tag: true, magic_constant_casing: true, mb_str_functions: false, method_argument_space: array{ensure_fully_multiline: true, keep_multiple_spaces_after_comma: false}, static_lambda: true, string_line_ending: true, method_chaining_indentation: true, modernize_types_casting: true, multiline_comment_opening_closing: true, multiline_whitespace_before_semicolons: array{strategy: string}, no_alternative_syntax: true, no_blank_lines_before_namespace: false, no_multiline_whitespace_before_semicolons: false, no_php4_constructor: false, no_short_echo_tag: true, no_useless_else: true, no_useless_return: true, no_superfluous_elseif: true, no_extra_blank_lines: array{tokens: array{0: string, 1: string, 2: string, 3: string, 4: string, 5: string, 6: string, 7: string, 8: string, 9: string, 10: string, 11: string, 12: string}}, phpdoc_to_return_type: true, phpdoc_var_annotation_correct_order: true, no_superfluous_phpdoc_tags: false, not_operator_with_space: false, not_operator_with_successor_space: true, no_homoglyph_names: false, no_unset_cast: true, ordered_interfaces: true, phpdoc_add_missing_param_annotation: array{only_untyped: false}, phpdoc_order: true, phpdoc_types_order: array{null_adjustment: string, sort_algorithm: string}, protected_to_private: true, psr0: false, psr4: true, semicolon_after_instruction: true, simplified_null_return: false, strict_comparison: true, strict_param: true, ordered_class_elements: true}
      */
     protected function getContribRules(): array
     {
@@ -337,14 +399,6 @@ final class Config extends CsConfig
             'escape_implicit_backslashes' => true,
             'explicit_indirect_variable' => true,
             'explicit_string_variable' => true,
-            'ordered_class_elements' => true,
-            'ordered_imports' => [
-                'importsOrder' => [
-                    'class',
-                    'const',
-                    'function',
-                ],
-            ],
             'final_class' => true,
             'final_internal_class' => true,
             'fully_qualified_strict_types' => true,
@@ -374,6 +428,23 @@ final class Config extends CsConfig
             'no_useless_else' => true,
             'no_useless_return' => true,
             'no_superfluous_elseif' => true,
+            'no_extra_blank_lines' => [
+                'tokens' => [
+                    'break',
+                    'case',
+                    'continue',
+                    'curly_brace_block',
+                    'default',
+                    'extra',
+                    'parenthesis_brace_block',
+                    'return',
+                    'square_brace_block',
+                    'switch',
+                    'throw',
+                    'use',
+                    'use_trait',
+                ],
+            ],
             'phpdoc_to_return_type' => true,
             'phpdoc_var_annotation_correct_order' => true,
             'no_superfluous_phpdoc_tags' => false,
@@ -382,7 +453,6 @@ final class Config extends CsConfig
             'no_homoglyph_names' => false,
             'no_unset_cast' => true,
             'ordered_interfaces' => true,
-            'php_unit_method_casing' => true,
             'phpdoc_add_missing_param_annotation' => [
                 'only_untyped' => false,
             ],
@@ -398,13 +468,26 @@ final class Config extends CsConfig
             'simplified_null_return' => false,
             'strict_comparison' => true,
             'strict_param' => true,
+            'ordered_class_elements' => true,
+        ];
+    }
+
+    /**
+     * @return array<string, bool>
+     *
+     * @psalm-return array{@PSR2: true}
+     */
+    protected function getPsr2Rules(): array
+    {
+        return [
+            '@PSR2' => true,
         ];
     }
 
     /**
      * @return ((bool|string|string[])[]|bool)[]
      *
-     * @psalm-return array{@PSR2: true, binary_operator_spaces: true, blank_line_after_opening_tag: true, braces: array{allow_single_line_closure: false, position_after_anonymous_constructs: string, position_after_control_structures: string, position_after_functions_and_oop_constructs: string}, concat_space: array{spacing: string}, declare_equal_normalize: array{space: string}, lowercase_cast: true, new_with_braces: true, no_blank_lines_after_class_opening: true, no_extra_blank_lines: array{tokens: array{0: string, 1: string, 2: string, 3: string, 4: string, 5: string, 6: string, 7: string, 8: string, 9: string, 10: string, 11: string, 12: string}}, no_leading_import_slash: true, no_singleline_whitespace_before_semicolons: true, no_trailing_whitespace: true, no_whitespace_before_comma_in_array: true, return_type_declaration: true, short_scalar_cast: true, single_import_per_statement: false, space_after_semicolon: array{remove_in_empty_for_expressions: true}, ternary_operator_spaces: true, unary_operator_spaces: true, visibility_required: array{elements: array{0: string, 1: string, 2: string}}, whitespace_after_comma_in_array: true}
+     * @psalm-return array{@PSR2: true, binary_operator_spaces: true, blank_line_after_opening_tag: true, braces: array{allow_single_line_closure: false, position_after_anonymous_constructs: string, position_after_control_structures: string, position_after_functions_and_oop_constructs: string}, concat_space: array{spacing: string}, declare_equal_normalize: array{space: string}, lowercase_cast: true, new_with_braces: true, no_blank_lines_after_class_opening: true, no_leading_import_slash: true, no_singleline_whitespace_before_semicolons: true, no_trailing_whitespace: true, no_whitespace_before_comma_in_array: true, ordered_imports: array{importsOrder: array{0: string, 1: string, 2: string}}, return_type_declaration: true, short_scalar_cast: true, single_import_per_statement: false, space_after_semicolon: array{remove_in_empty_for_expressions: true}, ternary_operator_spaces: true, unary_operator_spaces: true, visibility_required: array{elements: array{0: string, 1: string, 2: string}}, whitespace_after_comma_in_array: true}
      */
     protected function getPsr12Rules(): array
     {
@@ -425,27 +508,17 @@ final class Config extends CsConfig
             'lowercase_cast' => true,
             'new_with_braces' => true,
             'no_blank_lines_after_class_opening' => true,
-            'no_extra_blank_lines' => [
-                'tokens' => [
-                    'break',
-                    'case',
-                    'continue',
-                    'curly_brace_block',
-                    'default',
-                    'extra',
-                    'parenthesis_brace_block',
-                    'return',
-                    'square_brace_block',
-                    'switch',
-                    'throw',
-                    'use',
-                    'use_trait',
-                ],
-            ],
             'no_leading_import_slash' => true,
             'no_singleline_whitespace_before_semicolons' => true,
             'no_trailing_whitespace' => true,
             'no_whitespace_before_comma_in_array' => true,
+            'ordered_imports' => [
+                'importsOrder' => [
+                    'class',
+                    'const',
+                    'function',
+                ],
+            ],  // Contrib
             'return_type_declaration' => true,
             'short_scalar_cast' => true,
             'single_import_per_statement' => false,
@@ -464,7 +537,7 @@ final class Config extends CsConfig
     /**
      * @return ((string|string[]|true)[]|bool)[]
      *
-     * @psalm-return array{php_unit_expectation: array{target: string}, php_unit_dedicate_assert_internal_type: true, php_unit_mock: true, php_unit_mock_short_will_return: true, php_unit_namespaced: array{target: string}, php_unit_no_expectation_annotation: array{target: string, use_class_const: true}, php_unit_test_case_static_method_calls: array{call_type: string}, php_unit_internal_class: array{types: array{0: string, 1: string, 2: string}}, php_unit_ordered_covers: true, php_unit_set_up_tear_down_visibility: true, php_unit_strict: false, php_unit_size_class: true, php_unit_test_annotation: true, php_unit_test_class_requires_covers: true}
+     * @psalm-return array{php_unit_expectation: array{target: string}, php_unit_dedicate_assert_internal_type: true, php_unit_mock: true, php_unit_mock_short_will_return: true, php_unit_namespaced: array{target: string}, php_unit_no_expectation_annotation: array{target: string, use_class_const: true}, php_unit_test_case_static_method_calls: array{call_type: string}, php_unit_internal_class: array{types: array{0: string, 1: string, 2: string}}, php_unit_ordered_covers: true, php_unit_set_up_tear_down_visibility: true, php_unit_strict: false, php_unit_size_class: true, php_unit_test_annotation: true, php_unit_method_casing: true, php_unit_test_class_requires_covers: true}
      */
     protected function getPHPUnitRules(): array
     {
@@ -497,6 +570,7 @@ final class Config extends CsConfig
             'php_unit_strict' => false,
             'php_unit_size_class' => true,
             'php_unit_test_annotation' => true,
+            'php_unit_method_casing' => true,
             'php_unit_test_class_requires_covers' => true,
         ];
     }
@@ -656,5 +730,100 @@ final class Config extends CsConfig
             'unary_operator_spaces' => true,
             'whitespace_after_comma_in_array' => true,
         ];
+    }
+
+    /**
+     * @param array<int|string, mixed> $expected
+     * @param array<int|string, mixed> $actual
+     * @param string                   $set
+     */
+    private function assertHasRules(array $expected, array $actual, string $set): void
+    {
+        foreach ($expected as $fixer => $isEnabled) {
+            self::assertArrayHasKey($fixer, $actual, sprintf(
+                'Failed to assert that a rule for fixer [%s] (in set [%s]) exists.,',
+                $fixer,
+                $set
+            ));
+            self::assertSame($isEnabled, $actual[$fixer], sprintf(
+                'Failed to assert that fixer [%s] (in set [%s]) is %s.',
+                $fixer,
+                $set,
+                $isEnabled === true ? 'enabled' : 'disabled'
+            ));
+        }
+    }
+
+    /**
+     * @return array-key[]
+     *
+     * @psalm-return list<array-key>
+     */
+    private function configuredFixers(): array
+    {
+        $config = new Config();
+
+        /**
+         * RuleSet::create() removes disabled fixers, to let's just enable them to make sure they not removed.
+         *
+         * @see https://github.com/FriendsOfPHP/PHP-CS-Fixer/pull/2361
+         */
+        $rules = array_map(/**
+         * @return true
+         */
+        static function (): bool {
+            return true;
+        },
+            $config->getRules()
+        );
+
+        return array_keys(RuleSet::create($rules)->getRules());
+    }
+
+    /**
+     * @throws ReflectionException
+     *
+     * @return string[]
+     */
+    private function builtInFixers(): array
+    {
+        static $builtInFixers;
+
+        if (null === $builtInFixers) {
+            $fixerFactory = FixerFactory::create();
+            $fixerFactory->registerBuiltInFixers();
+
+            $builtInFixers = array_map(static function (FixerInterface $fixer): string {
+                return $fixer->getName();
+            }, $fixerFactory->getFixers());
+        }
+
+        return $builtInFixers;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function getDeprecatedFixer(): array
+    {
+        $phpCsFixerCustomFixers = [
+            'PhpCsFixerCustomFixers/implode_call',
+            'PhpCsFixerCustomFixers/no_two_consecutive_empty_lines',
+            'PhpCsFixerCustomFixers/no_unneeded_concatenation',
+            'PhpCsFixerCustomFixers/no_useless_class_comment',
+            'PhpCsFixerCustomFixers/no_useless_constructor_comment',
+            'PhpCsFixerCustomFixers/nullable_param_style',
+            'PhpCsFixerCustomFixers/single_line_throw',
+            'PhpCsFixerCustomFixers/phpdoc_var_annotation_correct_order',
+        ];
+        $pedroTrollerFixers = [
+            'PedroTroller/single_line_comment',
+            'PedroTroller/useless_comment',
+            'PedroTroller/ordered_spec_elements',
+            'PedroTroller/phpspec_scenario_return_type_declaration',
+            'PedroTroller/phpspec_scenario_scope',
+        ];
+
+        return array_merge($phpCsFixerCustomFixers, $pedroTrollerFixers);
     }
 }
