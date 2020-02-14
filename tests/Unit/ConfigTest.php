@@ -802,13 +802,11 @@ final class ConfigTest extends TestCase
     }
 
     /**
-     * @return string[]
-     *
-     * @psalm-return array{0: string, 1: string, 2: string, 3: string, 4: string, 5: string, 6: string, 7: string, 8: string, 9: string, 10: string, 11: string, 12: string}
+     * @return array<int, string>
      */
     private function getDeprecatedFixer(): array
     {
-        return [
+        $phpCsFixerCustomFixers = [
             'PhpCsFixerCustomFixers/implode_call',
             'PhpCsFixerCustomFixers/no_two_consecutive_empty_lines',
             'PhpCsFixerCustomFixers/no_unneeded_concatenation',
@@ -817,12 +815,15 @@ final class ConfigTest extends TestCase
             'PhpCsFixerCustomFixers/nullable_param_style',
             'PhpCsFixerCustomFixers/single_line_throw',
             'PhpCsFixerCustomFixers/phpdoc_var_annotation_correct_order',
-
+        ];
+        $pedroTrollerFixers = [
             'PedroTroller/single_line_comment',
             'PedroTroller/useless_comment',
             'PedroTroller/ordered_spec_elements',
             'PedroTroller/phpspec_scenario_return_type_declaration',
             'PedroTroller/phpspec_scenario_scope',
         ];
+
+        return array_merge($phpCsFixerCustomFixers, $pedroTrollerFixers);
     }
 }
