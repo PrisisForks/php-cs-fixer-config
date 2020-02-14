@@ -13,8 +13,8 @@ cache:
 before_install:
   - stty cols 120
   - mkdir -p ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d
-  - chmod a+x ./build/travis/configure_php.sh
-  - ./build/travis/configure_php.sh
+  - chmod a+x ./.build/travis/configure_php.sh
+  - ./.build/travis/configure_php.sh
 
 install:
   - composer global require hirak/prestissimo
