@@ -35,7 +35,12 @@ final class ComposerTest extends TestCase
 {
     public function testBranchAlias(): void
     {
-        $composerJson = json_decode((string) file_get_contents(__DIR__ . '/../../composer.json'), true, 512, JSON_THROW_ON_ERROR);
+        $composerJson = json_decode(
+            (string) file_get_contents(__DIR__ . '/../../composer.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR
+        );
 
         if (! isset($composerJson['extra']['branch-alias'])) {
             $this->addToAssertionCount(1); // composer.json doesn't contain branch alias, all good!
