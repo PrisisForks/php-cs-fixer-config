@@ -26,7 +26,7 @@
         "psalter": "psalter --issues=all --threads=$(nproc)",
         "psalter:check": "psalter --issues=all --dry-run --threads=$(nproc)",
         "psalm:fix": "psalm --alter --issues=InvalidReturnType --dry-run --threads=$(nproc)",
-        "infection": "infection --configuration=\"./../infection.json\" --ignore-msi-with-no-mutations --min-covered-msi=100 --min-msi=100 -j$(nproc)"
+        "infection": "infection --configuration=\"./../infection.json\" -j$(nproc)"
     },
     "extra": {
         "prefetcher": {

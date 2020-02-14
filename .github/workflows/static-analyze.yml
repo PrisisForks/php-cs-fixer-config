@@ -69,7 +69,7 @@ jobs:
           cd ..
 
       - name: "analyze php code"
-        run: php -d memory_limit=-1 ./.build/vendor/bin/phpstan analyse -c $GITHUB_WORKSPACE/phpstan.neon --error-format=checkstyle | cs2pr
+        run: php -d memory_limit=-1 composer --working-dir=./.build phpstan -- --error-format=checkstyle | cs2pr
 
   narrowspark-psalm-static-analysis:
     name: "Psalm"
@@ -126,4 +126,4 @@ jobs:
           cd ..
 
       - name: "analyze php code"
-        run: php -d memory_limit=-1 ./.build/vendor/bin/psalm --root=$GITHUB_WORKSPACE --threads=$(nproc) --shepherd --show-info=false --output-format=checkstyle | cs2pr
+        run: php -d memory_limit=-1 composer --working-dir=./.build psalm -- --shepherd --show-info=false --output-format=checkstyle | cs2pr
