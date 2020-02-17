@@ -63,7 +63,7 @@ jobs:
           cd ..
 
       - name: "analyze php code"
-        run: php -d memory_limit=-1 composer --working-dir=./.build phpstan -- --error-format=checkstyle
+        run: composer --working-dir=./.build phpstan -- --error-format=checkstyle
 
   narrowspark-psalm-static-analysis:
     name: "Psalm"
